@@ -1,0 +1,24 @@
+{
+  "name": "cards_against_humanity",
+  "version": "1.0.0",
+  "description": "Cards Against Humanity",
+  "main": "server.js",
+  "scripts": {
+	"start": "node server.js"
+  },
+  "repository": "-",
+  "author": "Kieran Paxton",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "http": "0.0.1-security",
+    "passport": "^0.4.1",
+    "passport-local": "^1.0.0",
+    "socket.io": "^2.3.0"
+  },
+  "engines": {
+    "node": "13.x",
+    "npm": "6.x"
+  }
+}

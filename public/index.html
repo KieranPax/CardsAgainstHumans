@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Cards Against Humanity</title>
+
+    <script src="lib/socket.io.js"></script>
+    <script src="lib/vue.js"></script>
+    <script src="lib/jquery-3.4.1.js"></script>
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/login.css">
+    <link rel="stylesheet" href="/chat.css">
+    <link rel="stylesheet" href="/game.css">
+
+</head>
+
+<body>
+    <div id="template-holder" style="display:none">
+        <div id="login-templates">
+            <template id="vue-login-holder-template">
+                <form id="login-holder" onsubmit="login_submit(event)">
+                    <input id="room-input" class="login-entry" type="text" placeholder="Room Code" :value="login.room"
+                        :class="login.room?'login-entry-preset':''">
+                    <input id="username-input" class="login-entry" type="text" placeholder="Username">
+                    <input id="enter-room-input" class="login-button" type="submit" value="Enter">
+                    <div id="login-response" v-if="login.response.length > 0">{{ login.response }}</div>
+                </form>
+            </template>
+        </div>
+        <div id="chat-templates">
+            <template id="vue-chat-msg-template">
+                <ul class="chat-msg"><span class="chat-msg-username">{{msg.user.name}}</span> {{msg.msg}}</ul>
+            </template>
+            <template id="vue-chat-template">
+                <div id="chat-holder">
+                    <form id="chat-entry-form" onsubmit="chat_submit(event)">
+                        <input id="chat-input" type="text" placeholder="Send msg">
+                    </form>
+                    <div id="chat-msg-box">
+                        <vue-chat-msg v-for="item in chat" :key="item.time.getTime()" v-bind:msg="item" />
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div id="user-list-templates">
+            <template id="vue-user-list-status-template">
+                <span class="status-icon">
+                    <svg v-if="status === 1 || status === 3 || status === 5 || status === 6" width="15" height="15"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="status-icon-svg">
+                        <animateTransform attributeName="transform" begin="0s" dur="1.5s" type="rotate" from="0 0 0"
+                            to="360 0 0" repeatCount="indefinite" />
+                        <line x1="12" y1="2" x2="12" y2="6"></line>
+                        <line x1="12" y1="18" x2="12" y2="22"></line>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                        <line x1="2" y1="12" x2="6" y2="12"></line>
+                        <line x1="18" y1="12" x2="22" y2="12"></line>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                    </svg>
+                    <svg v-else-if="status === 2" width="15" height="15" viewBox="-6 -6 30 30" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="status-icon-svg" transform="rotate(180,1,1)">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                    </svg>
+                    <svg v-else-if="status === 4 || status === 7" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="status-icon-svg">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="status-icon-svg"></svg>
+                </span>
+            </template>
+            <template id="vue-user-list-item-template">
+                <ul class="user-list-item">
+                    <!-- <span><vue-user-list-status v-bind:status="user.status" /></span> -->
+                    <span class="user-list-item-text">
+                        {{user.name}}
+                    </span>
+                    <span class="user-list-item-text"
+                        style="color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.1);">
+                        {{user.score}}
+                    </span>
+                </ul>
+            </template>
+        </div>
+
+        <template id="vue-main-game-holder-template">
+            <div id="main-game-holder">
+                <div id="user-list">
+                    <vue-user-list-item v-for="(item,index) in users" :key="item.id" v-bind:user="item" />
+                </div>
+                <slot></slot>
+            </div>
+        </template>
+        <template id="vue-main-game-template">
+            <div id="main-game">
+
+                <div v-if="game.state === 0">
+                    <vue-start-game v-bind:users="users" />
+                </div>
+
+                <div v-else-if="game.state === 1">
+                    <div v-if="this_user.id === game.curr_czar">
+                        <vue-black-card-chooser v-bind:cards="game.av_black" />
+                    </div>
+                    <div v-else class="waiting-msg">Waiting for next black card...</div>
+                </div>
+
+                <div v-else-if="game.state === 2">
+                    <div v-if="this_user.id !== game.curr_czar">
+                        <vue-white-card-chooser v-if="this_user.id !== game.curr_czar" v-bind:game="game"
+                            v-bind:this_game="this_game" v-bind:this_user="this_user" />
+                    </div>
+                    <div v-else class="waiting-msg">
+                        Waiting for next white cards...<br>
+                        ({{game.white_cards.length}}/{{Object.keys(users).length-1}})
+                    </div>
+                </div>
+
+                <div v-else-if="game.state === 3 || game.state === 4">
+                    <vue-card-showcase v-bind:game="game" v-bind:this_user="this_user" />
+                </div>
+
+                <div v-else-if="game.state === 5">
+                    <vue-winner-display v-bind:game="game" v-bind:users="users" v-bind:this_user="this_user" />
+                </div>
+
+                <div v-else-if="game.state === 6">
+                    <vue-scoreboard v-bind:users="users" v-bind:this_user="this_user" v-bind:this_game="this_game" />
+                </div>
+            </div>
+        </template>
+
+        <div id="card-templates">
+            <template id="vue-white-card-chooser-template">
+                <div id="white-card-chooser">
+                    <div class="card-holder"
+                        :style="'left:-'+scroll+'px'+(this_game.selected_white?';bottom:-250px':'')"
+                        v-on:wheel.prevent="doscroll" v-on:mousemove.passive="checkscroll">
+                        <vue-white-card v-for="item in this_user.cards" :key="item.id" v-bind:card="item" />
+                    </div>
+                    <div class="card-holder" style="left:10px;bottom:50%">
+                        <vue-white-card v-for="item in this_user.card_selection" :key="item.id" v-bind:card="item" />
+                    </div>
+                    <div style="position:absolute;right:100px;top:33px">
+                        <vue-black-card nohover="1" v-bind:card="game.curr_black" />
+                    </div>
+                    <button v-on:click="submit_ans" class="submit-answer continue-game-button"
+                        :disabled="this_user.card_selection.length!==game.curr_black.count || this_game.selected_white">
+                        Hand In
+                    </button>
+                </div>
+            </template>
+            <template id="vue-white-card-template">
+                <div class="white-card hover-card" v-on:click="doclick">
+                    {{card.text}}
+                </div>
+            </template>
+            <template id="vue-black-card-chooser-template">
+                <div class="card-holder" style="left:0">
+                    <vue-black-card v-for="item in cards" :key="item.id" v-bind:card="item" />
+                </div>
+            </template>
+            <template id="vue-black-card-template">
+                <div :class="nohover?'black-card':'black-card hover-card'" :style="extra_style" v-on:click="doclick">
+                    {{text}}
+                </div>
+            </template>
+        </div>
+
+        <template id="vue-start-game-template">
+            <div class="title-holder">
+                <h1 class="title-text">
+                    Cards Against Humanity
+                </h1>
+                <button class="continue-game-button start-game-button" v-on:click.prevent="dostart">
+                    Start Game with {{user_count}} Player<span v-if="user_count > 1">s</span>
+                </button>
+            </div>
+        </template>
+
+        <template id="vue-card-showcase-template">
+            <div>
+                <div class="card-holder showcase-card-holder" :style="(game.state===3)?'transform:translate('+(-265*game.curr_white_disp)+'px,0)':
+                                            'transform:translate(-100%,0)'">
+                    <vue-card-showcase-black v-for="(item,index) in game.white_cards" :key="item.id" v-bind:card="item"
+                        v-bind:game="game" v-bind:index="index" />
+                </div>
+                <button v-if="game.state === 3" class="continue-game-button showcase-next-card" v-on:click="nextcard"
+                    :disabled="game.curr_czar!==this_user.id">Next Card</button>
+                <button v-else class="continue-game-button showcase-next-card" disabled>
+                    <span v-if="game.curr_czar===this_user.id">Select the winning card!</span>
+                    <span v-else>Waiting for winner</span>
+                </button>
+            </div>
+        </template>
+        <template id="vue-card-showcase-black-template">
+            <div class="black-card showcase-card" :style="'opacity:'+(game.curr_white_disp >= index?'1':'0')"
+                :class="(game.state === 3)?'':'picking'" v-on:click="doselect">
+                <vue-card-showcase-text v-for="item in text" :key="item.text" v-bind:item="item" />
+            </div>
+        </template>
+        <template id="vue-card-showcase-text-template">
+            <span v-if="item.type===0" class="card-showcase-text">{{item.text}}</span>
+            <span v-else class="card-showcase-text-highlight">{{item.text}}</span>
+        </template>
+
+        <template id="vue-winner-display-template">
+            <div class="winner-card-holder">
+                <h2>The winning card is:</h2>
+                <h1>{{users[game.winner_card.user].name}}</h1>
+                <div>
+                    <vue-winner-black-card v-bind:game="game" />
+                </div>
+                <button v-if="this_user.id===game.curr_czar" class="continue-game-button" style="margin:0 0 15px 0"
+                    v-on:click="docontinue">Continue</button>
+            </div>
+        </template>
+        <template id="vue-winner-black-card-template">
+            <div class="black-card showcase-card" style="margin:20px">
+                <vue-card-showcase-text v-for="item in text" :key="item.text" v-bind:item="item" />
+            </div>
+        </template>
+
+        <template id="vue-scoreboard-template">
+            <div class="scoreboard-holder">
+                <div>
+                    <vue-scoreboard-item v-for="item in scores" :key="item.user.id" v-bind:score="item" />
+                </div>
+                <button class="continue-game-button ready-round" v-on:click="doready"
+                    :disabled="this_game.continued">Ready</button>
+            </div>
+        </template>
+        <template id="vue-scoreboard-item-template">
+            <div class="scoreboard-item">
+                <span class="scoreboard-place" :class="place_class(score.place)">{{place_str(score.place)}}</span>
+                {{score.user.name}} - {{score.user.score}}
+            </div>
+        </template>
+    </div>
+
+    <div id="main-page">
+        <div v-if="logged_in">
+            <vue-chat v-bind:chat="chat" />
+        </div>
+        <div v-if="logged_in">
+            <vue-main-game-holder v-bind:users="users" />
+            <slot>
+                <vue-main-game v-bind:game="game" v-bind:this_game="this_game" v-bind:users="users"
+                    v-bind:this_user_index="this_user" />
+            </slot>
+        </div>
+        <div v-else>
+            <vue-login-holder v-bind:login="login_values" />
+        </div>
+    </div>
+
+    <script src="/templates.js"></script>
+    <script src="/index.js"></script>
+
+</body>
+
+</html>

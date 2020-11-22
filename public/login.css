@@ -1,0 +1,76 @@
+form#login-holder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    width: 384px;
+    height: 320px;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.2), 0px 3px 14px rgba(0, 0, 0, 0.12), 0px 8px 10px rgba(0, 0, 0, 0.14);
+    border-radius: 5px;
+}
+
+input.login-entry {
+    position: relative;
+    left: 25px;
+    top: 0;
+    margin-top: 25px;
+    width: 318px;
+    height: 56px;
+
+    font-style: normal;
+    font-weight: normal;
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: 0.15px;
+    color: rgba(255, 255, 255, 0.87);
+    padding-left: 10px;
+
+    border-radius: 5px;
+    border: solid 2px rgba(255, 255, 255, 0.2);
+
+    background: none;
+}
+
+input.login-entry::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    opacity: 1;
+}
+
+input.login-button {
+    position: relative;
+    left: 25px;
+    top: 12px;
+    margin-top: 50px;
+    width: 328px;
+    height: 56px;
+
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2), 0px 2px 1px rgba(0, 0, 0, 0.12), 0px 1px 1px rgba(0, 0, 0, 0.14);
+    border-radius: 5px;
+    border: solid 1px rgba(255, 255, 255, 0.05);
+
+    font-style: normal;
+    font-weight: normal;
+    font-size: 18px;
+    line-height: 24px;
+    letter-spacing: 0.15px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+div#login-response {
+    background: rgba(187, 82, 82, 0.8);
+    width: 280px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    position: relative;
+    left: 50px;
+    top: -96px;
+    border: 2px solid rgba(198, 64, 64, 1);
+    border-radius: 5px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+}
